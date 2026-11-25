@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import sqlite3
 import unittest
 from unittest.mock import patch
 from tibber_local import storage
@@ -8,6 +9,13 @@ from tibber_local.__main__ import refresh, STATE
 
 
 class RefreshTests(unittest.TestCase):
+    def test_transaction_releases_database_handle(self):
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ,{'TIBBER_LOCAL_DATA_DIR':folder}):
+            with storage.connect() as db:
+                db.execute('SELECT 1')
+            with self.assertRaises(sqlite3.ProgrammingError):
+                db.execute('SELECT 1')
+
     def test_price_failure_leaves_consumption_transaction_unchanged(self):
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ,{'TIBBER_LOCAL_DATA_DIR':folder}):
             storage.save_config({'home_id':'synthetic-home','timezone':'Europe/Berlin','start':'2025-01-01'})

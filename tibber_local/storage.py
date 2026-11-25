@@ -65,9 +65,19 @@ def save_token(value):
     path.chmod(0o600)
 
 
+class Connection(sqlite3.Connection):
+    """Commit or roll back, then release file handles on every platform."""
+
+    def __exit__(self, *args):
+        try:
+            return super().__exit__(*args)
+        finally:
+            self.close()
+
+
 def connect():
     path = data_dir() / "history.sqlite3"
-    db = sqlite3.connect(path, timeout=30)
+    db = sqlite3.connect(path, timeout=30, factory=Connection)
     path.chmod(0o600)
     db.execute("CREATE TABLE IF NOT EXISTS intervals (kind TEXT, start TEXT, payload TEXT, PRIMARY KEY(kind, start))")
     db.execute("CREATE TABLE IF NOT EXISTS rates (month TEXT PRIMARY KEY, rate REAL NOT NULL)")
