@@ -62,7 +62,7 @@ For hour `h`, consumption is `q_h` in kWh and the subscription price is `p_h` in
 - **Hourly minus monthly average:** positive means the hypothetical monthly-average scenario costs less, negative means hourly costs less. Both totals and the difference use identical comparable hours. Other recorded costs may cover a larger period.
 - **Known monthly rate:** optionally enter a bill/contract rate for a month, on the same tax and variable-charge basis. This separate comparator is not inferred from the API and does not include fixed fees.
 
-The hypothetical monthly average is **not necessarily Tibber's billed monthly-average tariff**. A tariff recommendation needs contract or invoice reconciliation, including any different fees and settlement rules. Changing API prices alone does not prove how a contract is billed.
+Tibber Germany states that monthly dynamic billing uses an **SLP-weighted market average**, not an equal-hour average. The app's arithmetic monthly average is an **unweighted research benchmark, not the billed SLP tariff**. Its differences must not be presented as actual tariff savings. Use bill-verified monthly rates or obtain the applicable SLP series and reconcile charges before making that comparison. See [the verified billing method and required evidence](docs/monthly_tariff.md). Changing API prices alone does not prove how a contract is billed.
 
 This release requests **hourly consumption and hourly aggregated prices**, including in years when the market uses quarter-hourly prices. It cannot reconstruct exact quarter-hourly settlement or simulate quarter-hourly device control. Unsupported sub-hourly inputs are rejected rather than silently misaligned.
 
