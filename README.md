@@ -94,3 +94,13 @@ node --check tibber_local/static/app.js
 ```
 
 Tests cover consumption weighting, negative prices, DST, incomplete months, missing values, pagination, separate tariff rates, session access, cross-origin requests and DNS-rebinding Host checks. GitHub Actions also checks installation on macOS, Linux and Windows. The UI uses HTML, CSS, JavaScript and SVG; the backend uses Python's standard library and SQLite.
+
+## Audit consumption provenance
+
+```sh
+python -m tibber_local.provenance
+```
+
+This optional local diagnostic writes `provenance_audit.json` to the private runtime directory. It compares daily shapes after fitting a single scale: a day is flagged as profile-like only when at least three other dates match below 0.5% relative RMSE. It also checks a possible mixed transition day, reports long zero runs, and preserves DST intervals separately from 24-hour shape fitting. Pairwise comparison can take longer as history grows.
+
+These are statistical indicators, not supplier quality flags. An irregular curve is not certified as measured; a repeated curve does not establish the official SLP identifier, cause, or billing-method activation date. No period is automatically marked certified measured. Keep the resulting audit private alongside household history. See [the billing method and evidence requirements](docs/monthly_tariff.md).
