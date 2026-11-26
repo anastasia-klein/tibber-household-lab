@@ -41,3 +41,22 @@ The current hourly export cannot reproduce exact quarter-hourly settlement after
 - [Tibber: from smart-meter installation to interval billing](https://support.tibber.com/hc/de/articles/50493239194257-Vom-Smart-Meter-Einbau-bis-zur-dynamischen-Abrechnung) — meter installation and the actual settlement-method activation are separate steps.
 
 Public documentation changes over time. Historical bills and the applicable contract version take precedence for reconstructing earlier periods.
+
+## Reconstruct an explicit H0 counterfactual
+
+The optional `tibber_local.slp` module reads the original BDEW H0 workbook from [the official profile archive](https://www.bdew.de/media/documents/Profile.zip). It applies the nine season/day-type curves and the daily H0 dynamization polynomial from [BDEW's method document](https://www.bdew.de/media/documents/2000131_Anwendung-repraesentativen_Lastprofile-Step-by-step.pdf), including regional holidays supplied explicitly as ISO dates, Sunday treatment of holidays, Saturday treatment of 24/31 December, and physical DST intervals.
+
+For each calendar month it weights the subscription's gross variable prices by H0 interval energy, then applies that monthly rate to the household's selected consumption. A partial consumption month still uses the complete calendar month's reference prices. Recorded API interval costs are retained separately from hourly price-times-volume estimates. Fixed charges are assumed identical and excluded from both options.
+
+Install the optional XLS reader and provide local input paths:
+
+```sh
+python -m pip install '.[slp]'
+python -m tibber_local.slp --profile-xls /path/to/Haushalt-Lastprofil.xls --holidays-json /private/path/holidays.json --start 2025-01-01 --end 2025-10-01
+```
+
+The end date is exclusive. The holiday file is a JSON array of ISO dates for the appropriate region and years; an explicitly empty array represents no public holidays. For Baden-Württemberg, consult the [state's official holiday list](https://im.baden-wuerttemberg.de/de/service/feiertage). The raw BDEW workbook is downloaded separately rather than redistributed in this repository.
+
+For German market months from October 2025, supply a private JSON array of native quarter-hour subscription-price nodes using `--quarter-prices-json`. Alternatively, `--allow-hourly-price-approximation` explicitly permits an hourly-price approximation. Incomplete native-price months are rejected rather than silently filled with hourly prices. Native quarter-hour prices improve the SLP baseline but do not reconstruct unavailable quarter-hour household measurements.
+
+Results are saved to `slp_comparison.json` in the private runtime directory. They remain a model-based H0 counterfactual until the assigned profile and applicable tariff components are confirmed. Close matching against observed allocated curves is evidence for the profile choice, not a substitute for account documentation. Do not store reconstructed rates as bill-verified rates. Where savings are small, report them as estimates and show assumptions rather than claiming an exact invoice or a decisive tariff winner.
