@@ -32,6 +32,20 @@ class AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(result['summary']['mean_cost'],744)
         self.assertAlmostEqual(result['summary']['hourly_minus_mean'],297.6)
 
+    def test_price_load_profiles_match_intervals_and_month_filter(self):
+        start = instant('2025-01-31T12:00:00+01:00')
+        c,p = fixture(start, 49)
+        c[24]['consumption'] = None
+        result = analyze(c,p,'Europe/Berlin',year='2025',month='02')
+        noon = next(r for r in result['profiles'] if r['weekend'] and r['hour']==12)
+        self.assertEqual(noon['samples'], 1)
+        self.assertEqual(noon['matched_samples'], 1)
+        self.assertEqual(noon['matched_mean_kwh'], 1)
+        self.assertEqual(noon['matched_mean_price'], .1)
+        self.assertTrue(all(r['matched_samples']==0 for r in result['profiles'] if not r['weekend']))
+        missing = analyze(c,[], 'Europe/Berlin',year='2025',month='02')
+        self.assertTrue(all(r['matched_mean_kwh'] is None and r['matched_mean_price'] is None for r in missing['profiles']))
+
     def test_dst_expected_hours(self):
         self.assertEqual(expected_hours('2025-03',ZoneInfo('Europe/Berlin')),743)
         self.assertEqual(expected_hours('2025-10',ZoneInfo('Europe/Berlin')),745)

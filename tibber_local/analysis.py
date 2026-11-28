@@ -142,7 +142,11 @@ def analyze(consumption, prices, zone_name, year="all", month="all", daytype="al
             records = [r for r in selected if r["hour"] == hour and r["weekend"] == weekend]
             energy = [r["kwh"] for r in records if number(r["kwh"])]
             p = [r["price"] for r in records if number(r["price"])]
-            profiles.append({"hour": hour, "weekend": weekend, "samples": len(energy),
+            paired = [r for r in records if number(r["kwh"]) and number(r["price"])]
+            profiles.append({"matched_samples": len(paired),
+                             "matched_mean_kwh": mean(r["kwh"] for r in paired) if paired else None,
+                             "matched_mean_price": mean(r["price"] for r in paired) if paired else None,
+                             "hour": hour, "weekend": weekend, "samples": len(energy),
                              "mean_kwh": mean(energy) if energy else None,
                              "median_kwh": median(energy) if energy else None,
                              "p10_kwh": quantile(energy, .1), "p90_kwh": quantile(energy, .9),

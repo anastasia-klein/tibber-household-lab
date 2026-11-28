@@ -28,6 +28,32 @@ function plot(id, labels, series, {bars=false, digits=1}={}) {
   const step=Math.max(1,Math.ceil(labels.length/12));labels.forEach((label,i)=>{if(i%step===0)svg+=`<text x="${x(i)}" y="${height-12}" text-anchor="middle">${esc(label)}</text>`;});
   $(id).innerHTML=svg+'</svg>';
 }
+function priceLoadPlot(id, rows, allRows, currency) {
+  const matched=allRows.filter(r=>r.matched_samples>0);
+  if (!rows.some(r=>r.matched_samples>0)) {$(id).innerHTML='<p class="empty">No matched consumption and price hours in this selection</p>';return;}
+  const width=760,height=310,p={l:66,r:66,t:35,b:46},w=width-p.l-p.r,h=height-p.t-p.b;
+  const loadHi=Math.max(.01,...matched.map(r=>r.matched_mean_kwh))*1.15;
+  const ps=matched.map(r=>r.matched_mean_price*100);
+  let priceLo=Math.min(0,...ps),priceHi=Math.max(0,...ps);
+  const pad=(priceHi-priceLo||1)*.12;priceHi+=pad;if(priceLo<0)priceLo-=pad;
+  const x=hour=>p.l+(hour+.5)*w/24;
+  const yl=v=>p.t+h-v/loadHi*h,yp=v=>p.t+(priceHi-v)/(priceHi-priceLo)*h;
+  let svg=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc($(id).parentElement.querySelector('h3').textContent)}"><text x="${p.l}" y="17" class="load-label">kWh / hour</text><text x="${width-p.r}" y="17" text-anchor="end" class="price-label">${esc(currency)} cents / kWh</text>`;
+  for(let i=0;i<=4;i++){
+    const y=p.t+h-i*h/4;
+    svg+=`<line class="gridline" x1="${p.l}" x2="${width-p.r}" y1="${y}" y2="${y}"/><text x="${p.l-9}" y="${y+4}" text-anchor="end" class="load-label">${fmt(loadHi*i/4,2)}</text><text x="${width-p.r+9}" y="${y+4}" class="price-label">${fmt(priceLo+(priceHi-priceLo)*i/4,1)}</text>`;
+  }
+  const series=[{field:'matched_mean_kwh',scale:yl,mult:1,color:'#397de0',unit:'kWh',name:'Mean consumption'}, {field:'matched_mean_price',scale:yp,mult:100,color:'#dc8b27',unit:`${currency} cents/kWh`,name:'Mean quoted total price'}];
+  series.forEach(s=>{
+    let path='',open=false;
+    rows.forEach(r=>{const value=r[s.field];if(value==null){open=false;return;}const cy=s.scale(value*s.mult);path+=`${open?'L':'M'}${x(r.hour)},${cy} `;open=true;});
+    svg+=`<path class="series" stroke="${s.color}" d="${path}"/>`;
+    rows.forEach(r=>{if(r[s.field]==null)return;const label=`${String(r.hour).padStart(2,'0')}:00 · ${s.name}: ${fmt(r[s.field]*s.mult,3)} ${s.unit} · ${r.matched_samples} matched hours`;svg+=`<circle tabindex="0" aria-label="${esc(label)}" cx="${x(r.hour)}" cy="${s.scale(r[s.field]*s.mult)}" r="3.2" fill="${s.color}"><title>${esc(label)}</title></circle>`;});
+  });
+  for(let hour=0;hour<24;hour+=2)svg+=`<text x="${x(hour)}" y="${height-25}" text-anchor="middle">${String(hour).padStart(2,'0')}</text>`;
+  svg+=`<text x="${width/2}" y="${height-5}" text-anchor="middle">Local clock hour · ${esc(data.timezone)}</text></svg>`;
+  $(id).innerHTML=svg;
+}
 function table(id, headers, rows) {$(id).innerHTML=`<thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>`;}
 function render() {
   const d=data,s=d.summary,c=d.currency;
@@ -39,6 +65,8 @@ function render() {
   const series=field=>[false,true].map((weekend,i)=>({name:weekend?'Weekend':'Weekday',color:i?'#19a59d':'#397de0',values:d.profiles.filter(p=>p.weekend===weekend).map(p=>p[field])}));
   plot('profile-chart',Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),series('mean_kwh'),{digits:2});
   plot('price-chart',Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),series('mean_price'),{digits:2});
+  priceLoadPlot('weekday-price-load',d.profiles.filter(p=>!p.weekend),d.profiles,c);
+  priceLoadPlot('weekend-price-load',d.profiles.filter(p=>p.weekend),d.profiles,c);
   const ms=[...new Set(d.heatmap.map(r=>r.month))],width=1100,cell=38,row=25,left=90,height=ms.length*row+35;
   const max=Math.max(.001,...d.heatmap.map(r=>r.kwh??0));
   let svg=`<svg viewBox="0 0 ${width} ${Math.max(60,height)}" role="img" aria-label="Mean consumption by month and hour">`;
