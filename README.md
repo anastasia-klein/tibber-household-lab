@@ -106,3 +106,5 @@ This optional local diagnostic writes `provenance_audit.json` to the private run
 These are statistical indicators, not supplier quality flags. An irregular curve is not certified as measured; a repeated curve does not establish the official SLP identifier, cause, or billing-method activation date. No period is automatically marked certified measured. Keep the resulting audit private alongside household history. See [the billing method and evidence requirements](docs/monthly_tariff.md).
 
 For a monthly comparison with explicit SLP weights rather than the unweighted benchmark, see [the optional H0 reconstruction](docs/monthly_tariff.md#reconstruct-an-explicit-h0-counterfactual). It keeps reconstructed estimates separate from bill-verified rates and writes results only to local private storage.
+
+The [same-day peak-shifting diagnostic](docs/peak_shifting.md) estimates a constrained aggregate potential while preserving every day's consumption. It supports night-hour restrictions and delay-only scheduling, but remains separate from a realistic whole-appliance-cycle model.
